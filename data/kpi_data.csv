@@ -1,0 +1,13 @@
+ITEM,SEQ,VALUE
+SQL_FAB01,YIELD_RATE,"SELECT lot_id, step_id, SUM(pass_qty) / NULLIF(SUM(total_qty), 0) AS yield_rate FROM fab01_lot_history WHERE step_date >= SYSDATE - 7 GROUP BY lot_id, step_id"
+SQL_FAB01,UTILIZATION,"SELECT tool_id, SUM(run_time) / NULLIF(SUM(avail_time), 0) AS utilization FROM fab01_tool_log WHERE log_date >= SYSDATE - 7 GROUP BY tool_id"
+SQL_FAB01,CYCLE_TIME,"SELECT lot_id, (MAX(out_time) - MIN(in_time)) * 24 AS cycle_time_hr FROM fab01_move_log WHERE in_time >= SYSDATE - 30 GROUP BY lot_id"
+SQL_FAB01,WIP_COUNT,"SELECT step_id, COUNT(DISTINCT lot_id) AS wip_cnt FROM fab01_lot_status WHERE status = 'ACTIVE' GROUP BY step_id ORDER BY step_id"
+SQL_FAB02,YIELD_RATE,"SELECT lot_id, step_id, SUM(pass_qty) / NULLIF(SUM(total_qty), 0) AS yield_rate FROM fab02_lot_history WHERE step_date >= SYSDATE - 7 GROUP BY lot_id, step_id"
+SQL_FAB02,UTILIZATION,"SELECT tool_id, SUM(run_time) / NULLIF(SUM(avail_time), 0) AS utilization FROM fab02_tool_log WHERE log_date >= SYSDATE - 7 GROUP BY tool_id"
+SQL_FAB02,CYCLE_TIME,"SELECT lot_id, (MAX(out_time) - MIN(in_time)) * 24 AS cycle_time_hr FROM fab02_move_log WHERE in_time >= SYSDATE - 30 GROUP BY lot_id"
+SQL_FAB02,WIP_COUNT,"SELECT step_id, COUNT(DISTINCT lot_id) AS wip_cnt FROM fab02_lot_status WHERE status = 'ACTIVE' GROUP BY step_id ORDER BY step_id"
+SQL_FAB03,YIELD_RATE,"SELECT lot_id, step_id, SUM(pass_qty) / NULLIF(SUM(total_qty), 0) AS yield_rate FROM fab03_lot_history WHERE step_date >= SYSDATE - 7 GROUP BY lot_id, step_id"
+SQL_FAB03,UTILIZATION,"SELECT tool_id, SUM(run_time) / NULLIF(SUM(avail_time), 0) AS utilization FROM fab03_tool_log WHERE log_date >= SYSDATE - 7 GROUP BY tool_id"
+SQL_FAB03,CYCLE_TIME,"SELECT lot_id, (MAX(out_time) - MIN(in_time)) * 24 AS cycle_time_hr FROM fab03_move_log WHERE in_time >= SYSDATE - 30 GROUP BY lot_id"
+SQL_FAB03,WIP_COUNT,"SELECT step_id, COUNT(DISTINCT lot_id) AS wip_cnt FROM fab03_lot_status WHERE status = 'ACTIVE' GROUP BY step_id ORDER BY step_id"

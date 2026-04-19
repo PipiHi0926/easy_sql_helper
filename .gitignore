@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.env
+llm_test/
+llm_api_test
