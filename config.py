@@ -7,4 +7,7 @@ LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://localhost:11434/v1")
 LLM_API_KEY  = os.getenv("LLM_API_KEY",  "ollama")
 LLM_MODEL    = os.getenv("LLM_MODEL",    "qwen3.5:4b")
 
+# 設為 "true" 可關閉 qwen3.x 系列模型的 thinking 模式（公司 LLM 無需設定）
+LLM_DISABLE_THINKING = os.getenv("LLM_DISABLE_THINKING", "false").lower() == "true"
+
 DATA_FILE    = os.getenv("KPI_DATA_FILE", "data/kpi_data.csv")
