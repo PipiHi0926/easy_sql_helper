@@ -29,7 +29,7 @@ import _bootstrap  # noqa: F401
 
 import argparse
 import sys
-from datetime import datetime
+from pathlib import Path
 
 import config as cfg
 import data_loader as dl
@@ -37,6 +37,55 @@ import generator as gen
 import evaluator as evl
 import output_writer as ow
 from result_types import KpiResult
+
+
+def _load_kpi_config(path: str) -> dict:
+    """
+    載入 kpi_selection.yaml，回傳 dict。
+    需要 PyYAML（pip install pyyaml）；若未安裝則提示並離開。
+    """
+    try:
+        import yaml
+    except ImportError:
+        print("[ERROR] 使用 --kpi-config 需要安裝 PyYAML：pip install pyyaml", file=sys.stderr)
+        sys.exit(1)
+    p = Path(path)
+    if not p.exists():
+        print(f"[ERROR] 找不到 kpi_selection.yaml：{p}", file=sys.stderr)
+        sys.exit(1)
+    with p.open(encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def _apply_kpi_config(cfg_data: dict, args: argparse.Namespace) -> argparse.Namespace:
+    """
+    將 kpi_selection.yaml 的設定合併進 args。
+    優先順序：CLI 明確指定 > yaml > 預設值。
+    """
+    run_cfg = cfg_data.get("run", {})
+    kpis_cfg = cfg_data.get("kpis", [])
+
+    # 只在 CLI 未明確設定時，才從 yaml 補值
+    # （argparse 的 default 無法區分「使用者傳入」vs「預設值」，用 sentinel 判斷）
+    if not getattr(args, "_ref_set", False) and run_cfg.get("ref_factories"):
+        args.ref_factories = run_cfg["ref_factories"]
+    if not getattr(args, "_target_set", False) and run_cfg.get("target_factory"):
+        args.target_factory = run_cfg["target_factory"]
+    if run_cfg.get("data_file") and args.data_file == cfg.DATA_FILE:
+        args.data_file = run_cfg["data_file"]
+    if run_cfg.get("output_dir") and args.output_dir == "output":
+        args.output_dir = run_cfg["output_dir"]
+
+    # KPI 清單：只取 enabled: true 的項目（若 CLI 未指定 --kpi）
+    if args.kpi is None and kpis_cfg:
+        enabled = [k["name"] for k in kpis_cfg if k.get("enabled", False)]
+        if enabled:
+            args.kpi = enabled
+            print(f"[CONFIG] 從 kpi_selection.yaml 載入 {len(enabled)} 個 KPI：{enabled}")
+        else:
+            print("[WARN] kpi_selection.yaml 中沒有 enabled: true 的 KPI，將執行全部")
+
+    return args
 
 
 # ── 子命令實作 ────────────────────────────────────────────────
@@ -197,9 +246,11 @@ def _build_parser() -> argparse.ArgumentParser:
 
     # 共用參數
     shared = argparse.ArgumentParser(add_help=False)
-    shared.add_argument("--ref-factories",  required=True, nargs="+", metavar="FACTORY",
+    shared.add_argument("--kpi-config",     default=None, metavar="YAML",
+                        help="kpi_selection.yaml 路徑，用於設定廠區與 KPI 清單（優先順序低於其他 CLI 參數）")
+    shared.add_argument("--ref-factories",  nargs="+", metavar="FACTORY", default=None,
                         help="參考廠區代號（可多個），例如：SQL_F20 SQL_F20P1")
-    shared.add_argument("--target-factory", required=True, metavar="FACTORY",
+    shared.add_argument("--target-factory", metavar="FACTORY", default=None,
                         help="目標廠區代號")
     shared.add_argument("--kpi",            nargs="+", metavar="KPI", default=None,
                         help="指定 KPI（省略則全部）")
@@ -231,7 +282,20 @@ def main() -> int:
     parser = _build_parser()
     args   = parser.parse_args()
 
-    # generate 模式補上 eval_max_tokens（不需要但讓 handler 簽名一致）
+    # 套用 kpi_selection.yaml（若有指定）
+    if args.kpi_config:
+        cfg_data = _load_kpi_config(args.kpi_config)
+        args = _apply_kpi_config(cfg_data, args)
+
+    # 驗證必要參數
+    if not args.ref_factories:
+        print("[ERROR] 必須透過 --ref-factories 或 kpi_selection.yaml 指定參考廠區", file=sys.stderr)
+        return 1
+    if not args.target_factory:
+        print("[ERROR] 必須透過 --target-factory 或 kpi_selection.yaml 指定目標廠區", file=sys.stderr)
+        return 1
+
+    # generate 模式補上 eval_max_tokens
     if not hasattr(args, "eval_max_tokens"):
         args.eval_max_tokens = 3000
 

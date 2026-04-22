@@ -1,0 +1,51 @@
+# kpi_selection.yaml
+# ==================
+# 控制本次要執行的 KPI 清單。
+# 執行 run.py 時加上 --kpi-config kpi_selection.yaml 即可套用，
+# 不需要在指令列逐一輸入 KPI 名稱。
+#
+# 使用說明：
+#   - 在 run 區塊填入本次的廠區設定
+#   - 在 kpis 區塊決定哪些 KPI 要跑（enabled: true）
+#   - 不想跑的 KPI 改成 enabled: false，或整行刪除
+#
+# 欄位說明：
+#   name     KPI 名稱，需與資料檔 SEQ 欄位完全一致（大小寫敏感）
+#   enabled  true = 本次執行，false = 略過
+#   note     備注（不影響執行，純供自己紀錄）
+
+# ── 執行設定 ─────────────────────────────────────────────────
+run:
+  mode: backtest              # backtest（驗證）或 generate（生產）
+  ref_factories:              # 參考廠區（可多個）
+    - SQL_FAB01
+    - SQL_FAB02
+  target_factory: SQL_FAB03   # 目標廠區
+  data_file: data/kpi_data.csv
+  output_dir: output/
+
+# ── KPI 清單 ──────────────────────────────────────────────────
+# 先把資料檔中所有 KPI 列在這裡，每次執行前決定哪些要開啟。
+# 可執行下方指令列出所有 KPI：
+#   uv run python kpi_generator/list_kpis.py
+kpis:
+  - name: YIELD_RATE
+    enabled: true
+    note: 良率
+
+  - name: UTILIZATION
+    enabled: false
+    note: 設備稼動率（待驗證）
+
+  - name: CYCLE_TIME
+    enabled: false
+    note: 週期時間
+
+  - name: WIP_COUNT
+    enabled: false
+    note: 在製品數量
+
+  # ── 將公司實際 KPI 補充在此 ──────────────────────────────
+  # - name: YOUR_KPI_NAME
+  #   enabled: true
+  #   note: 說明
